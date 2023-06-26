@@ -37,15 +37,15 @@ async def main():
 
     #start thread running signal generator
 
-    global client_buffer, recorder_buffer
 
     client_buffer = []
     recorder_buffer = []
 
     data_mng = data_manager.DataManager(recorder_buffer, client_buffer)
 
-    client = ws_client.MainBoxClient(client_buffer)
-    
+    client = ws_client.MainBoxClient(client_buffer, data_mng)
+
+    await client.connect()
     
     due_serial_connect_protocol()
 
@@ -55,9 +55,10 @@ async def main():
 
     # TODO deactivate readings
 
-    asyncio.create_task(client.connect_and_read())
-    asyncio.create_task(data_mng.get_data_from_serial_comm())
+    asyncio.create_task(client.read_from_server())
     asyncio.create_task(client.periodic_data_transfer())
+    asyncio.create_task(data_mng.get_data_from_serial_comm())
+    
 
     while True:
         await asyncio.sleep(1)
