@@ -5,9 +5,11 @@ import sys
 import threading
 import time
 
+import data_manager
 import serial_comms
 import spacis_utils
 import websockets
+import ws_client
 
 
 def interrupt_handler(signal, frame):
@@ -34,6 +36,16 @@ async def main():
     signal.signal(signal.SIGINT, interrupt_handler)
 
     #start thread running signal generator
+
+    global client_buffer, recorder_buffer
+
+    client_buffer = []
+    recorder_buffer = []
+
+    data_mng = data_manager.DataManager(recorder_buffer, client_buffer)
+
+    client = ws_client.MainBoxClient(client_buffer)
+    
     
     due_serial_connect_protocol()
 
@@ -41,8 +53,17 @@ async def main():
     signal_management_thread = threading.Thread(target=ser_com.run)
     signal_management_thread.start()
 
+    # TODO deactivate readings
+
+    asyncio.create_task(client.connect_and_read())
+    asyncio.create_task(data_mng.get_data_from_serial_comm())
+    asyncio.create_task(client.periodic_data_transfer())
+
     while True:
         await asyncio.sleep(1)
+
+    
+
 
 
 asyncio.run(main())

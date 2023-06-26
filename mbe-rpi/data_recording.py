@@ -5,8 +5,8 @@ import numpy as np
 # TODO Move to config file
 BASE_DIR = './records/'
 
-class DataManager:
-    def __init__(self,):
+class DataRecorder:
+    def __init__(self):
         # filename given by current timestamp
         self.file_name = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         self.data_dir = BASE_DIR + self.file_name + '.csv'
