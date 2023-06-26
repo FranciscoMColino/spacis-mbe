@@ -1,0 +1,19 @@
+Network manager: https://www.makeuseof.com/fix-networkmanager-not-running-on-linux/
+systemctl status NetworkManager
+sudo systemctl restart NetworkManager
+systemctl enable NetworkManager - activate on startup
+
+Network connect: https://www.linuxfordevices.com/tutorials/ubuntu/connect-wifi-terminal-command-line
+nmcli radio wifi
+nmcli radio wifi on
+nmcli dev status
+nmcli dev wifi list
+sudo nmcli --ask dev wifi connect <SSID>
+
+
+Samba: https://pimylifeup.com/raspberry-pi-samba/
+
+usr: spacis-rpi
+psswd: spacis14
+local: /home/spacis-system
+share location: \\raspberrypi\spacis-share
