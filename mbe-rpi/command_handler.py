@@ -40,7 +40,7 @@ class CommandHandler:
             else:
                 print("LOG: Unknown temperature command action")
         else:
-            print("LOG: Unknown command type")
+            print("LOG: Unknown command type {0}".format(command["type"]))
 
     def handle_head_command(self):
         if len(self.command_queue) > 0:

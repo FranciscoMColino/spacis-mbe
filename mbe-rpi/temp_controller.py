@@ -25,10 +25,19 @@ class TemperatureController:
         self.fan_controller = mock_fans_controller.MockFansController()
         
     def change_all_fan_speed(self, value):
-        self.fan_controller.change_speed_all_fans(value)
+        if self.override_mode and self.fan_controller.all_fans_active():
+            self.fan_controller.change_speed_all_fans(value)
 
     def get_speed_all_fans(self):
         return self.fan_controller.get_speed_all_fans()
+    
+    def activate_all_fans(self):
+        if self.override_mode:
+            self.fan_controller.activate_all_fans()
+
+    def deactivate_all_fans(self):
+        if self.override_mode:
+            self.fan_controller.deactivate_all_fans()
 
     def get_temperature_status(self):
         temperature_status = {}
