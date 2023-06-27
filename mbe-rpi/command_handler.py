@@ -24,16 +24,19 @@ class CommandHandler:
         self.command_queue.append(command)
 
     def handle_command(self, command):
-        if command.type == "TEMPERATURE":
-            if command.action == "OVERRIDE":
-                self.temp_controller.override_mode = command.value
-            elif command.action == "FAN_SPEED":
-                self.temp_controller.change_all_fan_speed(command.value)
-            elif command.action == "FAN_ACTIVE":
-                if command.value:
+        if command["type"] == "TEMPERATURE":
+            if command["action"] == "OVERRIDE":
+                self.temp_controller.override_mode = command["value"]
+                print("LOG: Override mode set to " + str(command["value"]))
+            elif command["action"] == "FAN_SPEED":
+                self.temp_controller.change_all_fan_speed(command["value"])
+                print("LOG: Fan speed set to " + str(command["value"]))
+            elif command["action"] == "FAN_ACTIVE":
+                if command["value"]:
                     self.temp_controller.activate_all_fans()
                 else:
                     self.temp_controller.deactivate_all_fans()
+                print("LOG: All fans set to " + str(command["value"]))
             else:
                 print("LOG: Unknown temperature command action")
         else:

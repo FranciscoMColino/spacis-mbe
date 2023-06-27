@@ -9,13 +9,17 @@ HOST = "localhost"
 PORT = 8080
 WS_CLIENT_WAIT_TIME = 1/400
 WS_CLIENT_LONG_WAIT_TIME = 1/10
+RECONNECT_WAIT_TIME = 5
+
+# TODO implement a way to reconnect to the server if the connection is lost
 
 class MainBoxClient:
-    def __init__(self, data_buffer, data_mng):
+    def __init__(self, data_buffer, data_mng, command_handler):
         self.data_buffer = data_buffer
         self.data_mng = data_mng
         self.url = f"ws://{HOST}:{PORT}"
         self.ws = None
+        self.command_handler = command_handler
 
     async def connect(self):
         while True:
@@ -30,7 +34,6 @@ class MainBoxClient:
             except ConnectionRefusedError:
                 print("LOG: Connection refused")
                 await asyncio.sleep(WS_CLIENT_WAIT_TIME)
-
         
 
     async def read_from_server(self):
@@ -41,10 +44,25 @@ class MainBoxClient:
             try:
                 message = await self.ws.recv()
                 print(f'RECEIVED: {message}')
-                # Handle messages accordingly
+
+                # try to parse the message that should be in json format
+                try:
+                    message = json.loads(message)
+                except json.decoder.JSONDecodeError:
+                    print("LOG: Received message is not in JSON format")
+                    continue
+
+                # check if the message is a command
+                if message["type"] == "command":
+                    print("LOG: Received message is a command")
+                    self.command_handler.add_command(message["data"])
+                else:
+                    print("LOG: Received message is not a command")
+
             except self.ws.exceptions.ConnectionClosed:
                 print("LOG: Connection closed")
                 self.ws = None
+                asyncio.create_task(self.connect())
 
             await asyncio.sleep(WS_CLIENT_WAIT_TIME)
 
