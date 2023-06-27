@@ -50,3 +50,9 @@ class MockFansController:
             if not fan.active:
                 return False
         return True
+    
+    def get_speed_all_fans(self):
+        return [fan.value for fan in self.fans]
+    
+    def get_active_all_fans(self):
+        return [fan.active for fan in self.fans]

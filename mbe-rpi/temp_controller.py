@@ -27,6 +27,17 @@ class TemperatureController:
     def change_all_fan_speed(self, value):
         self.fan_controller.change_speed_all_fans(value)
 
+    def get_speed_all_fans(self):
+        return self.fan_controller.get_speed_all_fans()
+
+    def get_temperature_status(self):
+        temperature_status = {}
+        temperature_status["current_temperature"] = self.current_temperature
+        temperature_status["override_mode"] = self.override_mode
+        temperature_status["fan_speed"] = self.fan_controller.get_speed_all_fans()
+        temperature_status["fan_active"] = self.fan_controller.get_active_all_fans()
+        return temperature_status
+
     async def read_temperature(self):
         while True:
             self.current_temperature = temp_reader.mock_read_temperature()

@@ -11,15 +11,20 @@ WS_CLIENT_WAIT_TIME = 1/400
 WS_CLIENT_LONG_WAIT_TIME = 1/10
 RECONNECT_WAIT_TIME = 5
 
+TEMPERATURE_STATUS_WAIT_TIME = 5
+
+GPS_STATUS_WAIT_TIME = 5
+
 # TODO implement a way to reconnect to the server if the connection is lost
 
 class MainBoxClient:
-    def __init__(self, data_buffer, data_mng, command_handler):
+    def __init__(self, data_buffer, data_mng, command_handler, temp_controller):
         self.data_buffer = data_buffer
         self.data_mng = data_mng
         self.url = f"ws://{HOST}:{PORT}"
         self.ws = None
         self.command_handler = command_handler
+        self.temp_controller = temp_controller
 
     async def connect(self):
         while True:
@@ -76,9 +81,8 @@ class MainBoxClient:
             # print("LOG: periodic_data_transfer")
             #print("Server status: ", "ws ok " if self.ws else "ws BAD", self.data_buffer)
             if self.ws and self.data_buffer:
-                print("ACQUIRED: lock")
-                # TODO replace prints with a proper logger
-                print(f"SENDING: Sensor data w/ {len(self.data_buffer)} samples")
+                print("LOG: aquired lock")
+                print(f"LOG: Sending Sensor data w/ {len(self.data_buffer)} samples")
                 message = {}
                 message["type"] = "sensor_data"
                 message["data"] = spacis_utils.pack_sensor_data(self.data_buffer)
@@ -86,3 +90,14 @@ class MainBoxClient:
                 self.data_mng.clear_ws_client_buffer()
                 await self.ws.send(json.dumps(message))
                 await asyncio.sleep(WS_CLIENT_LONG_WAIT_TIME)
+
+    async def periodic_temperature_status(self):
+        while True:
+            await asyncio.sleep(TEMPERATURE_STATUS_WAIT_TIME)
+            if self.ws:
+                print("LOG: Sending temperature status")
+                message = {}
+                message["type"] = "temperature_status"
+                message["data"] = self.temp_controller.get_temperature_status()
+                await self.ws.send(json.dumps(message))
+    

@@ -49,7 +49,7 @@ async def main():
 
     data_mng = data_manager.DataManager(recorder_buffer, client_buffer)
 
-    client = ws_client.MainBoxClient(client_buffer, data_mng, cmd_handler)
+    client = ws_client.MainBoxClient(client_buffer, data_mng, cmd_handler, tmp_controller)
 
     await client.connect()
     
@@ -62,10 +62,14 @@ async def main():
     # TODO deactivate readings
 
     asyncio.create_task(cmd_handler.periodic_handle_command())
+
     asyncio.create_task(tmp_controller.read_temperature())
     asyncio.create_task(tmp_controller.control_temperature())
+    
     asyncio.create_task(client.read_from_server())
     asyncio.create_task(client.periodic_data_transfer())
+    asyncio.create_task(client.periodic_temperature_status())
+
     asyncio.create_task(data_mng.get_data_from_serial_comm())
     
 
