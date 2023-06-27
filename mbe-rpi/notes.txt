@@ -1,0 +1,5 @@
+Edit service: 		sudo nano /etc/systemd/system/mbe_script.service
+Reload: 			systemctl daemon-reload 
+Enable service: 	sudo systemctl start mbe_script.service
+Start service: 		sudo systemctl start mbe_script.service
+Check service: 		journalctl -u mbe_script.service

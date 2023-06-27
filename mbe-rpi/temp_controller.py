@@ -1,11 +1,11 @@
 import asyncio
 
-#import fans_controller
+import fans_controller
 import mock_fans_controller
 import temp_reader
 
-TEMP_READ_WAIT_TIME = 1/10
-TEMP_CONTROL_WAIT_TIME = 1/5
+TEMP_READ_WAIT_TIME = 1
+TEMP_CONTROL_WAIT_TIME = 1
 
 TEMP_THRESHOLD = 40
 
@@ -21,8 +21,8 @@ class TemperatureController:
     def __init__(self):
         self.current_temperature = 0
         self.override_mode = False
-        #self.fan_controller = fans_controller.FansController()
-        self.fan_controller = mock_fans_controller.MockFansController()
+        self.fan_controller = fans_controller.FansController()
+        #self.fan_controller = mock_fans_controller.MockFansController()
         
     def change_all_fan_speed(self, value):
         if self.override_mode and self.fan_controller.all_fans_active():
@@ -32,8 +32,13 @@ class TemperatureController:
         return self.fan_controller.get_speed_all_fans()
     
     def activate_all_fans(self):
+        print("LOG: Activating all fans")
         if self.override_mode:
             self.fan_controller.activate_all_fans()
+            print("LOG: All fans activated")
+        else:
+            print("LOG: Override mode is not active")
+        
 
     def deactivate_all_fans(self):
         if self.override_mode:
@@ -49,7 +54,7 @@ class TemperatureController:
 
     async def read_temperature(self):
         while True:
-            self.current_temperature = temp_reader.mock_read_temperature()
+            self.current_temperature = temp_reader.read_temperature()
             print("LOG: Current temperature: " + str(self.current_temperature))
             await asyncio.sleep(TEMP_READ_WAIT_TIME)
 
