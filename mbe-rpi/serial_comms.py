@@ -69,6 +69,11 @@ class DueSerialComm():
 
     def connect(self):
         # Filter the list to find the port with "Arduino" in its description
+
+        if (not serial_reading):
+            print("ERROR: Serial reading is not active")
+            return False
+
         arduino_ports = [
             p.device
             for p in serial.tools.list_ports.comports()
@@ -141,6 +146,9 @@ class DueSerialComm():
                 lock.release()
 
             await asyncio.sleep(0.01)
+        
+        ser.close()
+        print("LOG: Serial connection closed")
 
     async def async_work(self):
 
@@ -149,7 +157,6 @@ class DueSerialComm():
         while serial_reading:
 
             if not self.active:
-                time.sleep(1)
                 continue
 
             res = await self.read_messages()

@@ -33,6 +33,9 @@ class MainBoxClient:
                 print("LOG: Client started")
                 await self.ws.send("client-connect")
 
+
+                print("LOG: Client connected to server")
+
                 # TODO better client-server handshake
 
                 break
@@ -64,10 +67,14 @@ class MainBoxClient:
                 else:
                     print("LOG: Received message is not a command")
 
-            except self.ws.exceptions.ConnectionClosed:
-                print("LOG: Connection closed")
+            except Exception as e:
+                print("LOG: Exception while reading from server ", e)
+
+                if self.ws != None:
+                    asyncio.create_task(self.connect())
+
                 self.ws = None
-                asyncio.create_task(self.connect())
+                
 
             await asyncio.sleep(WS_CLIENT_WAIT_TIME)
 
