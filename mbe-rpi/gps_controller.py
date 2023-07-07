@@ -20,7 +20,7 @@ class GpsController:
     def get_gps_status(self):
         return {"lat": self.lat, "lon": self.lon}
 
-    async def periodic_gps_coords(self):
+    async def periodic_read_gps_coords(self):
         while True:
             if self.gpsd.waiting():
                 self.get_position_data()

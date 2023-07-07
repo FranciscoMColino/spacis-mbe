@@ -83,10 +83,12 @@ async def main():
     asyncio.create_task(tmp_controller.read_temperature())
     asyncio.create_task(tmp_controller.control_temperature())
 
-    asyncio.create_task(gps_controller.periodic_gps_coords())
+    asyncio.create_task(gps_controller.periodic_read_gps_coords())
+
     asyncio.create_task(client.read_from_server())
     asyncio.create_task(client.periodic_data_transfer())
     asyncio.create_task(client.periodic_temperature_status())
+    asyncio.create_task(client.periodic_gps_status())
 
 
     

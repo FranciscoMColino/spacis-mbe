@@ -118,10 +118,10 @@ class DueSerialComm():
         global recorded_signals
 
         while serial_reading:
-            print("LOG: Reading serial")
+            #print("LOG: Reading serial")
             try:
 
-                print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
+                #print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
 
                 while ser.in_waiting > 0:
 

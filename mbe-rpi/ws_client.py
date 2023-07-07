@@ -91,8 +91,8 @@ class MainBoxClient:
             # print("LOG: periodic_data_transfer")
             #print("Server status: ", "ws ok " if self.ws else "ws BAD", self.data_buffer)
             if self.ws and self.data_buffer:
-                print("LOG: aquired lock")
-                print(f"LOG: Sending Sensor data w/ {len(self.data_buffer)} samples")
+                #print("LOG: aquired lock")
+                #print(f"LOG: Sending Sensor data w/ {len(self.data_buffer)} samples")
                 message = {}
                 message["type"] = "sensor_data"
                 message["data"] = spacis_utils.pack_sensor_data(self.data_buffer)
