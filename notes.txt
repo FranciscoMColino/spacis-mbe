@@ -1,0 +1,2 @@
+follow and see outputs service: journalctl -f -u mbe_cript.service
+list services: systemctl list-units --type=service

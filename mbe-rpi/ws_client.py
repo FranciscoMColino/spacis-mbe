@@ -5,7 +5,7 @@ import time
 import spacis_utils
 import websockets
 
-HOST = "localhost"
+HOST = "192.168.43.130"
 PORT = 8080
 WS_CLIENT_WAIT_TIME = 1/400
 WS_CLIENT_LONG_WAIT_TIME = 1/10
