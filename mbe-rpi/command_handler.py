@@ -1,5 +1,7 @@
 import asyncio
 
+import os_command_controller
+
 """
 Command message format
 
@@ -36,9 +38,15 @@ class CommandHandler:
                     self.temp_controller.activate_all_fans()
                 else:
                     self.temp_controller.deactivate_all_fans()
-                print("LOG: All fans set to " + str(command["value"]))
             else:
                 print("LOG: Unknown temperature command action")
+        elif command["type"] == "OS":
+            if command["action"] == "SET_CPU_SPEED":
+                print("LOG: Setting CPU speed to " + str(command["value"]))
+                os_command_controller.set_cpu_speed(command["value"])
+            elif command["action"] == "REBOOT":
+                print("LOG: Rebooting")
+                os_command_controller.reboot()
         else:
             print("LOG: Unknown command type {0}".format(command["type"]))
 

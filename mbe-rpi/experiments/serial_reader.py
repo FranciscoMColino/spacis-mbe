@@ -1,4 +1,4 @@
-import serial
+import serial.tools.list_ports
 
 
 # Function to detect Arduino serial port

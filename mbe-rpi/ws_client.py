@@ -8,23 +8,23 @@ import websockets
 HOST = "192.168.43.130"
 PORT = 8080
 WS_CLIENT_WAIT_TIME = 1/400
-WS_CLIENT_LONG_WAIT_TIME = 1/10
+WS_CLIENT_LONG_WAIT_TIME = 1/200
 RECONNECT_WAIT_TIME = 5
 
 TEMPERATURE_STATUS_WAIT_TIME = 5
-
 GPS_STATUS_WAIT_TIME = 5
 
 # TODO implement a way to reconnect to the server if the connection is lost
 
 class MainBoxClient:
-    def __init__(self, data_buffer, data_mng, command_handler, temp_controller):
+    def __init__(self, data_buffer, data_mng, command_handler, temp_controller, gps_controller):
         self.data_buffer = data_buffer
         self.data_mng = data_mng
         self.url = f"ws://{HOST}:{PORT}"
         self.ws = None
         self.command_handler = command_handler
         self.temp_controller = temp_controller
+        self.gps_controller = gps_controller
 
     async def connect(self):
         while True:
@@ -42,6 +42,7 @@ class MainBoxClient:
             except ConnectionRefusedError:
                 print("LOG: Connection refused")
                 await asyncio.sleep(WS_CLIENT_WAIT_TIME)
+            
         
 
     async def read_from_server(self):
@@ -74,6 +75,8 @@ class MainBoxClient:
                     asyncio.create_task(self.connect())
 
                 self.ws = None
+
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
                 
 
             await asyncio.sleep(WS_CLIENT_WAIT_TIME)
@@ -88,8 +91,8 @@ class MainBoxClient:
             # print("LOG: periodic_data_transfer")
             #print("Server status: ", "ws ok " if self.ws else "ws BAD", self.data_buffer)
             if self.ws and self.data_buffer:
-                print("LOG: aquired lock")
-                print(f"LOG: Sending Sensor data w/ {len(self.data_buffer)} samples")
+                #print("LOG: aquired lock")
+                #print(f"LOG: Sending Sensor data w/ {len(self.data_buffer)} samples")
                 message = {}
                 message["type"] = "sensor_data"
                 message["data"] = spacis_utils.pack_sensor_data(self.data_buffer)
@@ -106,5 +109,15 @@ class MainBoxClient:
                 message = {}
                 message["type"] = "temperature_status"
                 message["data"] = self.temp_controller.get_temperature_status()
+                await self.ws.send(json.dumps(message))
+
+    async def periodic_gps_status(self):
+        while True:
+            await asyncio.sleep(GPS_STATUS_WAIT_TIME)
+            if self.ws:
+                print("LOG: Sending GPS status")
+                message = {}
+                message["type"] = "gps_status"
+                message["data"] = self.gps_controller.get_gps_status()
                 await self.ws.send(json.dumps(message))
     

@@ -118,20 +118,30 @@ class DueSerialComm():
         global recorded_signals
 
         while serial_reading:
+            #print("LOG: Reading serial")
             try:
+
+                #print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
+
                 while ser.in_waiting > 0:
 
-                    msg = ser.readline().decode('utf-8').rstrip().split(',')
-                    #print("RECEIVED: ", msg)
-                    try:
-                        msg = [int(i) for i in msg[:4] if i != '']
-                        recorded_signals_local_cache.append(msg)
-                    except ValueError:
-                        print("ERROR: Could not convert string to int")
-                        print(msg)
+                        #print("LOG: Stuck?")
+
+                        msg = ser.readline().decode('utf-8').rstrip().split(',')
+                        #print(".",end="")
+                        try:
+                            msg = [int(i) for i in msg[:4] if i != '']
+                            recorded_signals_local_cache.append(msg)
+                        except Exception as e:
+                            print("ERROR: Could not convert string to int")
+                            print(msg)
 
             except serial.SerialException:
                 print("ERROR: Serial connection lost")
+                self.status = "disconnected"
+                return False
+            except Exception as e:
+                print("ERROR: Other error, ", e)
                 self.status = "disconnected"
                 return False
 
@@ -146,6 +156,8 @@ class DueSerialComm():
                 lock.release()
 
             await asyncio.sleep(0.01)
+
+
         
         ser.close()
         print("LOG: Serial connection closed")
@@ -155,6 +167,8 @@ class DueSerialComm():
         asyncio.create_task(self.command_check())
 
         while serial_reading:
+
+            print("LOG: Serial async work")
 
             if not self.active:
                 continue
@@ -171,5 +185,6 @@ class DueSerialComm():
             await asyncio.sleep(1)
 
     def run(self):
+        print("RUNNING THREAD")
         asyncio.run(self.async_work())
             
