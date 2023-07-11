@@ -145,8 +145,8 @@ class DueSerialComm():
                         print(msg)
 
                     # if rnd.random() < 0.1:
-                    #    await asyncio.sleep(0.01)
-                    await asyncio.sleep(0.0003125)
+                    await asyncio.sleep(0.01)
+                    # await asyncio.sleep(0.0003125)
 
             except serial.SerialException:
                 print("ERROR: Serial connection lost")
