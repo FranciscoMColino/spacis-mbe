@@ -121,12 +121,14 @@ class DueSerialComm():
         recorded_signals_local_cache = []
 
         while serial_reading:
-            # print("LOG: Reading serial")
+            print("LOG: Reading serial")
             try:
 
-                # print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
+                print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
 
                 while ser.in_waiting > 0:
+
+                    print("LOG: Reading serial data")
 
                     # print("LOG: Stuck?")
 
