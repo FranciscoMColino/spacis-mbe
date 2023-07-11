@@ -1,4 +1,5 @@
 import asyncio
+import random as rnd
 import threading
 import time
 
@@ -140,7 +141,11 @@ class DueSerialComm():
                     except Exception as e:
                         print("ERROR: Could not convert string to int")
                         print(msg)
-                    await asyncio.sleep(0.0003125)
+
+                    if rnd.random() < 0.11:
+                        await asyncio.sleep(0.01)
+                    else:
+                        await asyncio.sleep(0.0003125)
 
             except serial.SerialException:
                 print("ERROR: Serial connection lost")
