@@ -140,6 +140,7 @@ class DueSerialComm():
                     except Exception as e:
                         print("ERROR: Could not convert string to int")
                         print(msg)
+                    await asyncio.sleep(0.0003125)
 
             except serial.SerialException:
                 print("ERROR: Serial connection lost")
@@ -149,8 +150,6 @@ class DueSerialComm():
                 print("ERROR: Other error, ", e)
                 self.status = "disconnected"
                 return False
-
-            await asyncio.sleep(0.0003125)
 
         ser.close()
         print("LOG: Serial connection closed")
