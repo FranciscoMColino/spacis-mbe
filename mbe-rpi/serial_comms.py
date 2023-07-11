@@ -195,7 +195,7 @@ class DueSerialComm():
         print("LOG: Starting serial transfer")
         asyncio.create_task(self.transfer_messages())
         print("LOG: Starting serial reading")
-        asyncio.create_task(self.read_messages())
+        # asyncio.create_task(self.read_messages())
 
         while serial_reading:
 
