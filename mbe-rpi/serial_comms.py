@@ -142,10 +142,7 @@ class DueSerialComm():
                         print("ERROR: Could not convert string to int")
                         print(msg)
 
-                    if rnd.random() < 0.11:
-                        await asyncio.sleep(0.01)
-                    else:
-                        await asyncio.sleep(0.0003125)
+                    await asyncio.sleep(0.0003125)
 
             except serial.SerialException:
                 print("ERROR: Serial connection lost")
@@ -161,32 +158,34 @@ class DueSerialComm():
 
     async def transfer_messages(self):
 
-        print("LOG: Starting serial transfer")
+        while serial_reading:
 
-        global recorded_signals_local_cache
+            print("LOG: Starting serial transfer")
 
-        transfered_messages = False
+            global recorded_signals_local_cache
 
-        lock_aquired = lock.acquire(False)
+            transfered_messages = False
 
-        if lock_aquired and recorded_signals_local_cache:
-            print("LOG: Succesfully aquired lock, transfering messages")
-            # transfer recorded_signals_local_cache to recorded_signals
-            recorded_signals.extend(recorded_signals_local_cache)
-            recorded_signals_local_cache = []
-            lock.release()
-            transfered_messages = True
-        elif lock_aquired:
-            print("LOG: Succesfully aquired lock")
-            lock.release()
-        else:
-            print("LOG: Failed to aquire lock")
+            lock_aquired = lock.acquire(False)
 
-        if transfered_messages:
-            print("LOG: Transfered messages to recorded_signals")
-            await asyncio.sleep(0.5)
-        else:
-            await asyncio.sleep(0.0003125)
+            if lock_aquired and recorded_signals_local_cache:
+                print("LOG: Succesfully aquired lock, transfering messages")
+                # transfer recorded_signals_local_cache to recorded_signals
+                recorded_signals.extend(recorded_signals_local_cache)
+                recorded_signals_local_cache = []
+                lock.release()
+                transfered_messages = True
+            elif lock_aquired:
+                print("LOG: Succesfully aquired lock")
+                lock.release()
+            else:
+                print("LOG: Failed to aquire lock")
+
+            if transfered_messages:
+                print("LOG: Transfered messages to recorded_signals")
+                await asyncio.sleep(0.5)
+            else:
+                await asyncio.sleep(0.0003125)
 
     async def async_work(self):
 
