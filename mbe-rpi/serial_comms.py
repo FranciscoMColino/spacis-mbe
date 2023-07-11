@@ -188,7 +188,7 @@ class DueSerialComm():
 
             if transfered_messages:
                 print("LOG: Transfered messages to recorded_signals")
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.05)
             else:
                 await asyncio.sleep(0.0003125)
 
