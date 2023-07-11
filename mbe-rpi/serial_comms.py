@@ -144,9 +144,7 @@ class DueSerialComm():
                         print("ERROR: Could not convert string to int")
                         print(msg)
 
-                    # if rnd.random() < 0.1:
-                    # await asyncio.sleep(0.01)
-                    # await asyncio.sleep(0.0003125)
+                    await asyncio.sleep(1/1600)
 
             except serial.SerialException:
                 print("ERROR: Serial connection lost")
@@ -157,7 +155,7 @@ class DueSerialComm():
                 self.status = "disconnected"
                 return False
 
-            await asyncio.sleep(0.01)
+            # await asyncio.sleep(0.01)
 
         ser.close()
         print("LOG: Serial connection closed")
