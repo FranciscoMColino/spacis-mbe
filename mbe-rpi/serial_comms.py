@@ -145,7 +145,7 @@ class DueSerialComm():
                         print(msg)
 
                     # if rnd.random() < 0.1:
-                    await asyncio.sleep(0.01)
+                    # await asyncio.sleep(0.01)
                     # await asyncio.sleep(0.0003125)
 
             except serial.SerialException:
@@ -156,6 +156,8 @@ class DueSerialComm():
                 print("ERROR: Other error, ", e)
                 self.status = "disconnected"
                 return False
+
+            await asyncio.sleep(0.01)
 
         ser.close()
         print("LOG: Serial connection closed")
