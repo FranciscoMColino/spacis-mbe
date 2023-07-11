@@ -187,7 +187,7 @@ class DueSerialComm():
                 # print("LOG: Failed to aquire lock")
 
             if transfered_messages:
-                print("LOG: Transfered messages to recorded_signals")
+                # print("LOG: Transfered messages to recorded_signals")
                 await asyncio.sleep(0.005)
             else:
                 await asyncio.sleep(0.0003125)
