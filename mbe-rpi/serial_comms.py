@@ -143,8 +143,8 @@ class DueSerialComm():
                         print("ERROR: Could not convert string to int")
                         print(msg)
 
-                    if rnd.random() < 0.1:
-                        await asyncio.sleep(0.01)
+                    # if rnd.random() < 0.1:
+                    #    await asyncio.sleep(0.01)
                     await asyncio.sleep(0.0003125)
 
             except serial.SerialException:
@@ -196,7 +196,7 @@ class DueSerialComm():
         print("LOG: Starting serial transfer")
         asyncio.create_task(self.transfer_messages())
         print("LOG: Starting serial reading")
-        # asyncio.create_task(self.read_messages())
+        asyncio.create_task(self.read_messages())
 
         while serial_reading:
 
