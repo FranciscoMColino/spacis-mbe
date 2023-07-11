@@ -14,6 +14,7 @@ recorded_signals = []
 serial_reading = True
 lock = threading.Lock()
 command_buffer = []
+recorded_signals_local_cache = []
 
 
 def kill_signal_generator():
