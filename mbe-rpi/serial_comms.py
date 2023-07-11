@@ -139,6 +139,7 @@ class DueSerialComm():
                     try:
                         msg = [int(i) for i in msg[:4] if i != '']
                         recorded_signals_local_cache.append(msg)
+                        print(msg)
                     except Exception as e:
                         print("ERROR: Could not convert string to int")
                         print(msg)
