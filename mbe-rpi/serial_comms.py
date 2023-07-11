@@ -6,19 +6,23 @@ import serial.tools.list_ports
 
 # TODO Move to config file
 BAUDRATE = 500000
-MAX_WAITING_TIME = 5 * 1000 * 1000 # microseconds before the serial connection is considered dead
+# microseconds before the serial connection is considered dead
+MAX_WAITING_TIME = 5 * 1000 * 1000
 
 recorded_signals = []
 serial_reading = True
 lock = threading.Lock()
 command_buffer = []
 
+
 def kill_signal_generator():
     global serial_reading
     serial_reading = False
 
+
 def command_serial_comms(command):
     command_buffer.append(command)
+
 
 class DueSerialComm():
     def __init__(self):
@@ -29,13 +33,13 @@ class DueSerialComm():
 
     async def command_check(self):
         while (len(command_buffer) > 0):
-            
+
             lock_aquired = lock.acquire(False)
 
             if lock_aquired:
 
                 command = command_buffer.pop(0)
-            
+
                 if (command == "activate"):
                     self.activate()
                 elif (command == "deactivate"):
@@ -44,15 +48,14 @@ class DueSerialComm():
                     self.reset()
                 else:
                     print("ERROR: Invalid command:", command)
-                
+
                 lock.release()
 
                 if (len(command_buffer) == 0):
                     asyncio.sleep(1)
-                
+
             elif lock_aquired:
                 lock.release()
-
 
     def activate(self):
         self.active = True
@@ -64,7 +67,7 @@ class DueSerialComm():
         self.active = False
         self.ser.close()
         self.status = "disconnected"
-    
+
     # TODO keep trying to connect, and deal with disconnects
 
     def connect(self):
@@ -86,12 +89,12 @@ class DueSerialComm():
             return
 
         try:
-            self.ser  = serial.Serial(arduino_ports[0], self.baundrate)
+            self.ser = serial.Serial(arduino_ports[0], self.baundrate)
         except serial.SerialException:
             print("ERROR: Could not connect to serial port")
             self.ser = None
             return False
-        
+
         if self.ser:
             print("Connected successfully to the arduino", arduino_ports[0])
             self.status = "connected"
@@ -100,7 +103,7 @@ class DueSerialComm():
             print("Failed to connect to the arduino")
             self.status = "disconnected"
             return False
-        
+
     def reset(self):
         # TODO use gpio to reset the arduino
         pass
@@ -113,28 +116,28 @@ class DueSerialComm():
             print("ERROR: No serial port found")
             return
 
+        global serial_reading, recorded_signals, recorded_signals_local_cache
+
         recorded_signals_local_cache = []
-        global serial_reading
-        global recorded_signals
 
         while serial_reading:
-            #print("LOG: Reading serial")
+            # print("LOG: Reading serial")
             try:
 
-                #print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
+                # print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
 
                 while ser.in_waiting > 0:
 
-                        #print("LOG: Stuck?")
+                    # print("LOG: Stuck?")
 
-                        msg = ser.readline().decode('utf-8').rstrip().split(',')
-                        #print(".",end="")
-                        try:
-                            msg = [int(i) for i in msg[:4] if i != '']
-                            recorded_signals_local_cache.append(msg)
-                        except Exception as e:
-                            print("ERROR: Could not convert string to int")
-                            print(msg)
+                    msg = ser.readline().decode('utf-8').rstrip().split(',')
+                    # print(".",end="")
+                    try:
+                        msg = [int(i) for i in msg[:4] if i != '']
+                        recorded_signals_local_cache.append(msg)
+                    except Exception as e:
+                        print("ERROR: Could not convert string to int")
+                        print(msg)
 
             except serial.SerialException:
                 print("ERROR: Serial connection lost")
@@ -145,46 +148,46 @@ class DueSerialComm():
                 self.status = "disconnected"
                 return False
 
-            lock_aquired = lock.acquire(False)
+            await asyncio.sleep(0.0003125)
 
-            if lock_aquired and recorded_signals_local_cache:
-                #transfer recorded_signals_local_cache to recorded_signals
-                recorded_signals.extend(recorded_signals_local_cache)
-                recorded_signals_local_cache = []
-                lock.release()
-            elif lock_aquired:
-                lock.release()
-
-            await asyncio.sleep(0.01)
-
-
-        
         ser.close()
         print("LOG: Serial connection closed")
+
+    async def transfer_messages(self):
+
+        global recorded_signals_local_cache
+
+        transfered_messages = False
+
+        lock_aquired = lock.acquire(False)
+
+        if lock_aquired and recorded_signals_local_cache:
+            # transfer recorded_signals_local_cache to recorded_signals
+            recorded_signals.extend(recorded_signals_local_cache)
+            recorded_signals_local_cache = []
+            lock.release()
+            transfered_messages = True
+        elif lock_aquired:
+            lock.release()
+
+        if transfered_messages:
+            print("LOG: Transfered messages to recorded_signals")
+            await asyncio.sleep(0.5)
+        else:
+            await asyncio.sleep(0.0003125)
 
     async def async_work(self):
 
         asyncio.create_task(self.command_check())
+        asyncio.create_task(self.read_messages())
+        asyncio.create_task(self.transfer_messages())
 
         while serial_reading:
 
-            print("LOG: Serial async work")
+            # TODO deal with arduino disconnections and deactivations
 
-            if not self.active:
-                continue
-
-            res = await self.read_messages()
-
-            if not res:
-                print("ERROR: Arduino dead or disconnected")
-                print("LOG: Reseting the arduino")
-                self.reset()
-                print("LOG: Trying to connect to the arduino")
-                self.connect()
-            
             await asyncio.sleep(1)
 
     def run(self):
         print("RUNNING THREAD")
         asyncio.run(self.async_work())
-            
