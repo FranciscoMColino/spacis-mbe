@@ -9,6 +9,7 @@ def read_temperature():
     data = bus.read_i2c_block_data(ADDRESS, 0x00, 2)
     temp = ((data[0] << 8) | data[1]) >> 4
     temp = temp * 0.0625
+    return data # TODO for debug purposes
     return temp
 
 def mock_read_temperature():
