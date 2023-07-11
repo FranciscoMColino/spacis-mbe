@@ -157,6 +157,8 @@ class DueSerialComm():
 
     async def transfer_messages(self):
 
+        print("LOG: Starting serial transfer")
+
         global recorded_signals_local_cache
 
         transfered_messages = False
@@ -164,13 +166,17 @@ class DueSerialComm():
         lock_aquired = lock.acquire(False)
 
         if lock_aquired and recorded_signals_local_cache:
+            print("LOG: Succesfully aquired lock, transfering messages")
             # transfer recorded_signals_local_cache to recorded_signals
             recorded_signals.extend(recorded_signals_local_cache)
             recorded_signals_local_cache = []
             lock.release()
             transfered_messages = True
         elif lock_aquired:
+            print("LOG: Succesfully aquired lock")
             lock.release()
+        else:
+            print("LOG: Failed to aquire lock")
 
         if transfered_messages:
             print("LOG: Transfered messages to recorded_signals")
