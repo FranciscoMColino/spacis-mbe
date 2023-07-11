@@ -112,6 +112,8 @@ class DueSerialComm():
 
     async def read_messages(self):
 
+        BURST_READ_SIZE = 256
+
         ser = self.ser
 
         if (not ser):
@@ -128,7 +130,13 @@ class DueSerialComm():
 
                 # print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
 
+                acc = 0
+
                 while ser.in_waiting > 0:
+
+                    acc += 1
+                    if (acc > BURST_READ_SIZE):
+                        break
 
                     # print("LOG: Reading serial data")
 
@@ -144,8 +152,6 @@ class DueSerialComm():
                         print("ERROR: Could not convert string to int")
                         print(msg)
 
-                    await asyncio.sleep(1/1600)
-
             except serial.SerialException:
                 print("ERROR: Serial connection lost")
                 self.status = "disconnected"
@@ -155,7 +161,7 @@ class DueSerialComm():
                 self.status = "disconnected"
                 return False
 
-            # await asyncio.sleep(0.01)
+            await asyncio.sleep(1/1600 * 2 * BURST_READ_SIZE)
 
         ser.close()
         print("LOG: Serial connection closed")
