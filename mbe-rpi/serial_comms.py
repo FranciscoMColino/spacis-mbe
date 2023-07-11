@@ -123,14 +123,14 @@ class DueSerialComm():
         recorded_signals_local_cache = []
 
         while serial_reading:
-            print("LOG: Reading serial")
+            # print("LOG: Reading serial")
             try:
 
-                print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
+                # print("LOG: Waiting for serial data, in_waiting: ", ser.in_waiting)
 
                 while ser.in_waiting > 0:
 
-                    print("LOG: Reading serial data")
+                    # print("LOG: Reading serial data")
 
                     # print("LOG: Stuck?")
 
@@ -166,24 +166,25 @@ class DueSerialComm():
 
         while serial_reading:
 
-            print("LOG: Starting serial transfer")
+            # print("LOG: Starting serial transfer")
 
             transfered_messages = False
 
             lock_aquired = lock.acquire(False)
 
             if lock_aquired and recorded_signals_local_cache:
-                print("LOG: Succesfully aquired lock, transfering messages")
+                # print("LOG: Succesfully aquired lock, transfering messages")
                 # transfer recorded_signals_local_cache to recorded_signals
                 recorded_signals.extend(recorded_signals_local_cache)
                 recorded_signals_local_cache = []
                 lock.release()
                 transfered_messages = True
             elif lock_aquired:
-                print("LOG: Succesfully aquired lock")
+                # print("LOG: Succesfully aquired lock")
                 lock.release()
             else:
-                print("LOG: Failed to aquire lock")
+                pass
+                # print("LOG: Failed to aquire lock")
 
             if transfered_messages:
                 print("LOG: Transfered messages to recorded_signals")
