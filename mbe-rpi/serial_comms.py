@@ -179,8 +179,11 @@ class DueSerialComm():
     async def async_work(self):
 
         asyncio.create_task(self.command_check())
+        print("LOG: Starting serial reading")
         asyncio.create_task(self.read_messages())
+        print("LOG: Starting serial transfer")
         asyncio.create_task(self.transfer_messages())
+        print("LOG: Starting serial writing")
 
         while serial_reading:
 
