@@ -160,11 +160,11 @@ class DueSerialComm():
 
     async def transfer_messages(self):
 
+        global serial_reading, recorded_signals_local_cache
+
         while serial_reading:
 
             print("LOG: Starting serial transfer")
-
-            global recorded_signals_local_cache
 
             transfered_messages = False
 
