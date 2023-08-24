@@ -107,8 +107,12 @@ class MainBoxClient:
                     data_buffer_trimmed = self.data_buffer[:MAX_NUM_SAMPLES]
                     data_buffer_trimmed = [x[:4] for x in data_buffer_trimmed]
 
-                    transmission_data = self.data_buffer
-                    self.data_buffer = []
+                    if len(self.data_buffer) > MAX_NUM_SAMPLES:
+                        self.data_buffer = self.data_buffer[MAX_NUM_SAMPLES:]
+                    else:
+                        self.data_buffer = []
+
+                    transmission_data = data_buffer_trimmed
                     self.data_mng.clear_ws_client_buffer()
 
                     message = {}
