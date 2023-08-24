@@ -6,17 +6,25 @@ import time
 import serial.tools.list_ports
 
 # TODO Move to config file
-BAUDRATE = 250000
+BAUDRATE = 500000
 # microseconds before the serial connection is considered dead
 MAX_WAITING_TIME = 5 * 1000 * 1000
 
-MSG_SIZE = 39
+SEQUENCE_MSG_SIZE = 38
+PPS_MSG_SIZE = 14
+READ_SIZE = 50
 
-recorded_signals = []
+command_buffer = []
+
 serial_reading = True
 lock = threading.Lock()
-command_buffer = []
+
+recorded_signals = []
 recorded_signals_local_cache = []
+
+pps_id = -1
+pps_entries = []
+pps_entries_local_cache = []
 
 
 def kill_signal_generator():
@@ -114,7 +122,7 @@ class DueSerialComm():
 
     def try_transfer_message(self):
 
-        global serial_reading, recorded_signals_local_cache
+        global serial_reading, recorded_signals_local_cache, pps_entries_local_cache, pps_entries
 
         lock_aquired = lock.acquire(False)
 
@@ -125,11 +133,18 @@ class DueSerialComm():
             recorded_signals_local_cache = []
             lock.release()
             return True
+        if lock_aquired and pps_entries_local_cache:
+            # print("LOG: Succesfully aquired lock, transfering messages")
+            # transfer recorded_signals_local_cache to recorded_signals
+            pps_entries.extend(pps_entries_local_cache)
+            pps_entries_local_cache = []
+            lock.release()
+            return True
         elif lock_aquired:
             # print("LOG: Succesfully aquired lock")
             lock.release()
             return False
-        
+
         return False
 
     async def read_messages(self):
@@ -142,7 +157,7 @@ class DueSerialComm():
             print("ERROR: No serial port found")
             return
 
-        global serial_reading, recorded_signals, recorded_signals_local_cache
+        global serial_reading, recorded_signals, recorded_signals_local_cache, pps_id
 
         recorded_signals_local_cache = []
 
@@ -154,29 +169,47 @@ class DueSerialComm():
 
                 acc = 0
 
-                while ser.in_waiting > MSG_SIZE:
+                while ser.in_waiting > READ_SIZE:
 
                     acc += 1
                     if (acc > BURST_READ_SIZE):
+                        print("LOG: HERE {}".format(acc))
                         break
 
-                    # print("LOG: Reading serial data")
+                    char1 = ser.read(1).decode('utf-8')
 
-                    # print("LOG: Stuck?")
+                    if char1 == "S" and ser.read(1).decode('utf-8') == "Y":
+                        print("Received SY")
+                        msg = ser.read(PPS_MSG_SIZE).decode('utf-8').rstrip()
 
-                    msg = ser.read(MSG_SIZE).decode('utf-8').rstrip().split(',')
-                    # print(".",end="")
-                    try:
-                        #if rnd.random() < 0.01:
-                            #print(msg)
-                        msg = [int(i) for i in msg[:4] if i != '']
-                        recorded_signals_local_cache.append(msg)
-                        acc += 1
-                    except Exception as e:
-                        print("ERROR: Could not convert string to int")
-                        ser.reset_input_buffer()
-                        print(msg)
-                # print("LOG: serial read done {}".format(acc))
+                        try:
+                            msg = int(msg)
+                            pps_id += 1
+                            pps_entries_local_cache.append([pps_id, msg])
+
+                            print("SY - {}".format(msg))
+                        except Exception as e:
+                            print("ERROR: Could not convert string to int, pps_msg")
+                            ser.reset_input_buffer()
+                            print(msg)
+
+                    elif char1 == "C" and ser.read(1).decode('utf-8') == "A":
+                        print("Received CA")
+
+                        msg = ser.read(SEQUENCE_MSG_SIZE).decode(
+                            'utf-8').rstrip().split(',')
+                        try:
+                            msg = [int(i) for i in msg if i != '']
+                            msg.append(pps_id)
+                            recorded_signals_local_cache.append(msg)
+                            acc += 1
+                            print("CA - {}".format(msg))
+                        except Exception as e:
+                            print(
+                                "ERROR: Could not convert string to int, sequence_msg")
+                            ser.reset_input_buffer()
+                            print(msg)
+                print("Break")
                 acc = 0
                 await asyncio.sleep(1/1600/2)
 
@@ -189,10 +222,10 @@ class DueSerialComm():
                 self.status = "disconnected"
                 return False
 
-            #await asyncio.sleep(1/1600)
+            # await asyncio.sleep(1/1600)
 
         ser.close()
-        print("LOG: Serial connection closed")  
+        print("LOG: Serial connection closed")
 
     async def transfer_messages(self):
 
@@ -206,14 +239,14 @@ class DueSerialComm():
 
             if transfered_messages:
                 # print("LOG: Transfered messages to recorded_signals")
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.2)
             else:
                 await asyncio.sleep(1/1600/2)
 
     async def async_work(self):
 
         asyncio.create_task(self.command_check())
-        
+
         print("LOG: Starting serial reading")
         asyncio.create_task(self.read_messages())
 
