@@ -1,34 +1,35 @@
 import RPi.GPIO as GPIO
 
-FAN0_PIN = 18
-FAN1_PIN = 23
-
-FAN_CONTROL_FREQ = 1000
 
 class Fan:
-    def __init__(self, id, pwm):
+    def __init__(self, id, pin):
         self.id = id
         self.active = False
-        self.value = 0
-        self.pwm = pwm
+        self.pin = pin
 
 class FansController:
 
-    def __init__(self):
+    def __init__(self, settings):
 
         self.fan_ids = [0, 1]
 
+        BOX_FANS_PIN = settings['box_fans_pin']
+        RPI_FANS_PIN = settings['rpi_fans_pin']
+
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(FAN0_PIN, GPIO.OUT)
-        GPIO.setup(FAN1_PIN, GPIO.OUT)
+        GPIO.setup(BOX_FANS_PIN, GPIO.OUT)
+        GPIO.setup(RPI_FANS_PIN, GPIO.OUT)
 
-        self.fan0 = Fan(0, GPIO.PWM(FAN0_PIN, FAN_CONTROL_FREQ))
-        self.fan1 = Fan(1, GPIO.PWM(FAN1_PIN, FAN_CONTROL_FREQ))
+        GPIO.output(BOX_FANS_PIN, GPIO.LOW)
+        GPIO.output(RPI_FANS_PIN, GPIO.LOW)
 
-        self.fans = [self.fan0, self.fan1]
+        self.box_fans = Fan('box', BOX_FANS_PIN)
+        self.rpi_fans = Fan('rpi', RPI_FANS_PIN )
 
-        self.fan0.pwm.start(0)
-        self.fan1.pwm.start(0)
+        self.fans = {
+            'box': self.box_fans,
+            'rpi': self.rpi_fans
+        }
 
     def get_fan_from_id(self, fan_id):
         return self.fans[fan_id]
@@ -37,21 +38,20 @@ class FansController:
         fan = self.get_fan_from_id(fan_id)
         if fan.active:
             fan.value = value
-            fan.pwm.ChangeDutyCycle(value)
+            if value == 0:
+                GPIO.output(fan.pin, GPIO.LOW)
+            else:
+                GPIO.output(fan.pin, GPIO.HIGH)
 
     def activate_fan(self, fan_id):
         fan = self.get_fan_from_id(fan_id)
         fan.active = True
-        fan.pwm.ChangeDutyCycle(fan.value)
+        GPIO.output(fan.pin, GPIO.HIGH)
 
     def deactivate_fan(self, fan_id):
         fan = self.get_fan_from_id(fan_id)
         fan.active = False
-        fan.pwm.ChangeDutyCycle(0)
-
-    def change_speed_all_fans(self, value):
-        for fan in self.fans:
-            self.change_speed_fan(fan.id, value)
+        GPIO.output(fan.pin, GPIO.LOW)
     
     def activate_all_fans(self):
         print("LOG: Activating all fans")
@@ -69,11 +69,11 @@ class FansController:
             if not fan.active:
                 return False
         return True
-
-    def get_speed_all_fans(self):
-        return [fan.value for fan in self.fans]
     
+    def is_fan_active(self, fan_id):
+        return self.get_fan_from_id(fan_id).active
+
     def get_active_all_fans(self):
-        return [fan.active for fan in self.fans]
+        return [fan.active for fan in self.fans.values()]
     
         

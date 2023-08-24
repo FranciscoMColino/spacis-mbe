@@ -1,0 +1,5 @@
+#gcs_server_ip: "192.168.137.1" #hotspot legion5
+gcs_server_ip: "169.254.1.226" #local lab network
+gcs_server_port: 8080
+box_fans_pin: 20
+rpi_fans_pin: 21

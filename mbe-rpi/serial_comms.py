@@ -6,9 +6,11 @@ import time
 import serial.tools.list_ports
 
 # TODO Move to config file
-BAUDRATE = 500000
+BAUDRATE = 250000
 # microseconds before the serial connection is considered dead
 MAX_WAITING_TIME = 5 * 1000 * 1000
+
+MSG_SIZE = 39
 
 recorded_signals = []
 serial_reading = True
@@ -110,6 +112,26 @@ class DueSerialComm():
         # TODO use gpio to reset the arduino
         pass
 
+    def try_transfer_message(self):
+
+        global serial_reading, recorded_signals_local_cache
+
+        lock_aquired = lock.acquire(False)
+
+        if lock_aquired and recorded_signals_local_cache:
+            # print("LOG: Succesfully aquired lock, transfering messages")
+            # transfer recorded_signals_local_cache to recorded_signals
+            recorded_signals.extend(recorded_signals_local_cache)
+            recorded_signals_local_cache = []
+            lock.release()
+            return True
+        elif lock_aquired:
+            # print("LOG: Succesfully aquired lock")
+            lock.release()
+            return False
+        
+        return False
+
     async def read_messages(self):
 
         BURST_READ_SIZE = 256
@@ -132,7 +154,7 @@ class DueSerialComm():
 
                 acc = 0
 
-                while ser.in_waiting > 0:
+                while ser.in_waiting > MSG_SIZE:
 
                     acc += 1
                     if (acc > BURST_READ_SIZE):
@@ -142,15 +164,21 @@ class DueSerialComm():
 
                     # print("LOG: Stuck?")
 
-                    msg = ser.readline().decode('utf-8').rstrip().split(',')
+                    msg = ser.read(MSG_SIZE).decode('utf-8').rstrip().split(',')
                     # print(".",end="")
                     try:
+                        #if rnd.random() < 0.01:
+                            #print(msg)
                         msg = [int(i) for i in msg[:4] if i != '']
                         recorded_signals_local_cache.append(msg)
-                        # print(msg)
+                        acc += 1
                     except Exception as e:
                         print("ERROR: Could not convert string to int")
+                        ser.reset_input_buffer()
                         print(msg)
+                # print("LOG: serial read done {}".format(acc))
+                acc = 0
+                await asyncio.sleep(1/1600/2)
 
             except serial.SerialException:
                 print("ERROR: Serial connection lost")
@@ -161,10 +189,10 @@ class DueSerialComm():
                 self.status = "disconnected"
                 return False
 
-            await asyncio.sleep(1/1600 * 2 * BURST_READ_SIZE)
+            #await asyncio.sleep(1/1600)
 
         ser.close()
-        print("LOG: Serial connection closed")
+        print("LOG: Serial connection closed")  
 
     async def transfer_messages(self):
 
@@ -174,37 +202,23 @@ class DueSerialComm():
 
             # print("LOG: Starting serial transfer")
 
-            transfered_messages = False
-
-            lock_aquired = lock.acquire(False)
-
-            if lock_aquired and recorded_signals_local_cache:
-                # print("LOG: Succesfully aquired lock, transfering messages")
-                # transfer recorded_signals_local_cache to recorded_signals
-                recorded_signals.extend(recorded_signals_local_cache)
-                recorded_signals_local_cache = []
-                lock.release()
-                transfered_messages = True
-            elif lock_aquired:
-                # print("LOG: Succesfully aquired lock")
-                lock.release()
-            else:
-                pass
-                # print("LOG: Failed to aquire lock")
+            transfered_messages = self.try_transfer_message()
 
             if transfered_messages:
                 # print("LOG: Transfered messages to recorded_signals")
                 await asyncio.sleep(0.5)
             else:
-                await asyncio.sleep(0.0003125)
+                await asyncio.sleep(1/1600/2)
 
     async def async_work(self):
 
         asyncio.create_task(self.command_check())
-        print("LOG: Starting serial transfer")
-        asyncio.create_task(self.transfer_messages())
+        
         print("LOG: Starting serial reading")
         asyncio.create_task(self.read_messages())
+
+        print("LOG: Starting serial transfer")
+        asyncio.create_task(self.transfer_messages())
 
         while serial_reading:
 

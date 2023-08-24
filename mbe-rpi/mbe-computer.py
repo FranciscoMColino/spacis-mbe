@@ -9,7 +9,10 @@ import data_manager
 import serial_comms
 import temp_controller
 import ws_client
+from data_recording import DataRecorder
 from gps_controller import GpsController
+from spacis_utils import parse_settings
+from system_controller import SystemController
 
 
 def interrupt_handler(signal, frame):
@@ -32,38 +35,25 @@ def due_serial_connect_protocol():
 
 
 async def main():
+
+    settings = parse_settings()
+
     # connect to gcs computer (server) with a webscoket client
     signal.signal(signal.SIGINT, interrupt_handler)
 
     #start thread running signal generator
 
-
     client_buffer = []
     recorder_buffer = []
 
-    print("LOG: Starting temperature controller")
+    data_record = DataRecorder()
+    tmp_controller = temp_controller.TemperatureController(data_record, settings)
+    system_controller = SystemController()
+    cmd_handler = command_handler.CommandHandler(tmp_controller, system_controller)
+    data_mng = data_manager.DataManager(recorder_buffer, client_buffer, data_record)
+    gps_controller = GpsController(data_record)
+    client = ws_client.MainBoxClient(client_buffer, data_mng, cmd_handler, tmp_controller, system_controller, gps_controller, settings)
 
-    tmp_controller = temp_controller.TemperatureController()
-
-    print("LOG: Starting command handler")
-
-    cmd_handler = command_handler.CommandHandler(tmp_controller)
-
-    print("LOG: Starting data manager")
-
-    data_mng = data_manager.DataManager(recorder_buffer, client_buffer)
-
-    print("LOG: Starting GPS controller")
-
-    gps_controller = GpsController()
-
-    print("LOG: Starting websocket client")
-
-    client = ws_client.MainBoxClient(client_buffer, data_mng, cmd_handler, tmp_controller, gps_controller)
-
-    await client.connect()
-
-    print("LOG: Starting serial communication")
     
     due_serial_connect_protocol()
 
@@ -71,9 +61,7 @@ async def main():
     signal_management_thread = threading.Thread(target=ser_com.run)
     signal_management_thread.start()
 
-    print("LOG: Starting periodic tasks")
-
-    # TODO deactivate readings
+    asyncio.create_task(client.run())
 
     asyncio.create_task(cmd_handler.periodic_handle_command())
     
@@ -83,16 +71,9 @@ async def main():
     asyncio.create_task(tmp_controller.read_temperature())
     asyncio.create_task(tmp_controller.control_temperature())
 
+    asyncio.create_task(system_controller.read_cpu_speed())
+
     asyncio.create_task(gps_controller.periodic_read_gps_coords())
-
-    asyncio.create_task(client.read_from_server())
-    asyncio.create_task(client.periodic_data_transfer())
-    asyncio.create_task(client.periodic_temperature_status())
-    asyncio.create_task(client.periodic_gps_status())
-
-
-    
-    
 
     while True:
         await asyncio.sleep(1)

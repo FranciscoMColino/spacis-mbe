@@ -1,9 +1,12 @@
+import random as rnd
+
 import serial.tools.list_ports
 
 
 # Function to detect Arduino serial port
 def detect_arduino_port():
     ports = serial.tools.list_ports.comports()
+    print(ports)
     arduino_ports = [
         p.device
         for p in ports
@@ -14,19 +17,24 @@ def detect_arduino_port():
     else:
         return None
 
+MSG_SIZE = 39
+
 # Detect Arduino port
 arduino_port = detect_arduino_port()
 if arduino_port:
     print(f"Arduino found on port: {arduino_port}")
     try:
         # Open the serial port
-        ser = serial.Serial(arduino_port, 9600)  # Modify the baud rate if necessary
+        ser = serial.Serial(arduino_port, 2000000)  # Modify the baud rate if necessary
         
         while True:
             # Read values from Arduino
-            if ser.in_waiting > 0:
-                value = ser.readline().decode().strip()
-                print(f"Received value: {value}")
+            waiting_bytes = ser.in_waiting
+            if waiting_bytes > MSG_SIZE:
+                msg = ser.read(MSG_SIZE).decode('utf-8')
+                no_bytes_msg = len(msg)
+                if rnd.random() < 0.005:
+                    print(f"Received value: {msg}, {waiting_bytes} bytes waiting, {no_bytes_msg} bytes received")
                 
     except serial.SerialException as e:
         print(f"Error: {e}")
