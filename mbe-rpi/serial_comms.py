@@ -173,13 +173,11 @@ class DueSerialComm():
 
                     acc += 1
                     if (acc > BURST_READ_SIZE):
-                        print("LOG: HERE {}".format(acc))
                         break
 
                     char1 = ser.read(1).decode('utf-8')
 
                     if char1 == "S" and ser.read(1).decode('utf-8') == "Y":
-                        print("Received SY")
                         msg = ser.read(PPS_MSG_SIZE).decode('utf-8').rstrip()
 
                         try:
@@ -187,14 +185,12 @@ class DueSerialComm():
                             pps_id += 1
                             pps_entries_local_cache.append([pps_id, msg])
 
-                            print("SY - {}".format(msg))
                         except Exception as e:
                             print("ERROR: Could not convert string to int, pps_msg")
                             ser.reset_input_buffer()
                             print(msg)
 
                     elif char1 == "C" and ser.read(1).decode('utf-8') == "A":
-                        print("Received CA")
 
                         msg = ser.read(SEQUENCE_MSG_SIZE).decode(
                             'utf-8').rstrip().split(',')
@@ -203,7 +199,6 @@ class DueSerialComm():
                             msg.append(pps_id)
                             recorded_signals_local_cache.append(msg)
                             acc += 1
-                            print("CA - {}".format(msg))
                         except Exception as e:
                             print(
                                 "ERROR: Could not convert string to int, sequence_msg")
