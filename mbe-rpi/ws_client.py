@@ -52,10 +52,10 @@ class MainBoxClient:
                 break
             except ConnectionRefusedError:
                 print("LOG: Connection refused")
-                await asyncio.sleep(WS_CLIENT_WAIT_TIME)
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
             except Exception as e:
                 print("LOG: Exception while connecting to server ", e)
-                await asyncio.sleep(WS_CLIENT_WAIT_TIME)
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
 
     async def read_from_server(self):
 

@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import random as rnd
 import threading
 import time
@@ -183,7 +184,8 @@ class DueSerialComm():
                         try:
                             msg = int(msg)
                             pps_id += 1
-                            pps_entries_local_cache.append([pps_id, msg])
+                            pps_entries_local_cache.append(
+                                [pps_id, msg, datetime.datetime.now().strftime("%H:%M:%S")])
 
                         except Exception as e:
                             print("ERROR: Could not convert string to int, pps_msg")
