@@ -143,12 +143,14 @@ class MainBoxClient:
                     data_buffer_trimmed = [x[:4] for x in data_buffer_trimmed]
 
                     if len(self.data_buffer) > MAX_NUM_SAMPLES:
-                        self.data_buffer = self.data_buffer[MAX_NUM_SAMPLES:]
+                        print("LOG: Buffer overflow")
+                        self.data_mng.reduce_ws_client_buffer(MAX_NUM_SAMPLES)
                     else:
-                        self.data_buffer = []
+                        print("LOG: Buffer cleared")
+                        self.data_mng.clear_ws_client_buffer()
 
                     transmission_data = data_buffer_trimmed
-                    self.data_mng.clear_ws_client_buffer()
+                    
 
                     message = {}
                     message["type"] = "sensor_data"
