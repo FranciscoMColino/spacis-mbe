@@ -2,8 +2,9 @@ import asyncio
 import json
 import time
 
-import spacis_utils
 import websockets
+
+import spacis_utils
 
 WS_CLIENT_WAIT_TIME = 1/400
 WS_CLIENT_LONG_WAIT_TIME = 1/200
@@ -18,6 +19,11 @@ SYSTEM_STATUS_WAIT_TIME = 1
 
 # TODO implement a way to reconnect to the server if the connection is lost
 
+class ConnectionClosedUnexpectedly(Exception):
+    def __init__(self, message, errors):            
+        # Call the base class constructor with the parameters it needs
+        super().__init__(message)
+        self.errors = errors
 
 class MainBoxClient:
     def __init__(self, data_buffer, data_mng, command_handler, temp_controller, system_controller, gps_controller, settings):
@@ -78,16 +84,16 @@ class MainBoxClient:
         while True:
             try:
                 if not self.ws:
-                    print("LOG: Server connection lost")
-                    raise websockets.exceptions.ConnectionClosedError(
-                        0, "Server connection lost")
+                    print("LOG: Server connection lost HERE1")
+                    raise ConnectionClosedUnexpectedly("Server connection lost", 0)
+
                 try:
                     message = await asyncio.wait_for(self.ws.recv(), timeout=SERVER_TIMEOUT)
                 except asyncio.TimeoutError:
                     if not self.heart_beat:
-                        print("LOG: Server connection lost")
-                        raise websockets.exceptions.ConnectionClosedError(
-                            0, "Server connection lost")
+                        print("LOG: Server connection lost HERE2")
+                        #raise asyncio.TimeoutError
+                        raise ConnectionClosedUnexpectedly("Server connection lost", 0)
                     else:
                         print("LOG: Server connection ok")
                         self.heart_beat = False
@@ -169,6 +175,11 @@ class MainBoxClient:
                 print("LOG: Connection closed")
                 self.ws = None
                 await asyncio.sleep(RECONNECT_WAIT_TIME)
+            
+            except Exception as e:
+                print("LOG: Exception while sending data to server ", e)
+                self.ws = None
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
 
     async def periodic_temperature_status(self):
         while True:
@@ -182,6 +193,10 @@ class MainBoxClient:
                     await self.ws.send(json.dumps(message))
             except websockets.exceptions.ConnectionClosedError:
                 print("LOG: Connection closed")
+                self.ws = None
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
+            except Exception as e:
+                print("LOG: Exception while sending temperature status to server ", e)
                 self.ws = None
                 await asyncio.sleep(RECONNECT_WAIT_TIME)
 
@@ -200,6 +215,10 @@ class MainBoxClient:
                 print("LOG: Connection closed")
                 self.ws = None
                 await asyncio.sleep(RECONNECT_WAIT_TIME)
+            except Exception as e:
+                print("LOG: Exception while sending system status to server ", e)
+                self.ws = None
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
 
 
     async def periodic_gps_status(self):
@@ -214,6 +233,10 @@ class MainBoxClient:
                     await self.ws.send(json.dumps(message))
             except websockets.exceptions.ConnectionClosedError:
                 print("LOG: Connection closed")
+                self.ws = None
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
+            except Exception as e:
+                print("LOG: Exception while sending GPS status to server ", e)
                 self.ws = None
                 await asyncio.sleep(RECONNECT_WAIT_TIME)
 
