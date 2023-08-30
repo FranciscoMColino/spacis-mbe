@@ -42,10 +42,12 @@ class MainBoxClient:
     async def connect(self):
         while True:
             try:
-                self.ws = await websockets.connect(self.url)
+                tmp_ws = await websockets.connect(self.url)
                 print("LOG: Client started")
-                await self.ws.send("client-connect")
+                await tmp_ws.send("client-connect")
                 print("LOG: Client connected to server")
+
+                self.ws = tmp_ws
 
                 # TODO better client-server handshake
 
