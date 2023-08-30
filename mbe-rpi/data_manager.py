@@ -10,6 +10,7 @@ class DataManager:
         self.recorder_buffer = recorder_buffer
         self.ws_client_buffer = ws_client_buffer
         self.data_record = data_record
+        self.pps_entries = []
 
     def get_recorder_buffer(self):
         return self.recorder_buffer
@@ -38,8 +39,16 @@ class DataManager:
                     self.recorder_buffer.extend(recorded)
                     self.ws_client_buffer.extend(recorded)
                     serial_comms.recorded_signals = []
-                    serial_comms.lock.release()
                     
+                    pps_entries = []
+                    if serial_comms.pps_entries:
+                        self.pps_entries.extend(serial_comms.pps_entries)
+                        pps_entries = serial_comms.pps_entries
+                        serial_comms.pps_entries = []
+                    
+                    serial_comms.lock.release()
+
+                    self.data_record.record_multiple_pps_data(pps_entries)
                     self.data_record.record_multiple_sensor_data(recorded)
 
                     await asyncio.sleep(DATA_MANAGER_LONG_WAIT_TIME)

@@ -127,26 +127,27 @@ class DueSerialComm():
 
         lock_aquired = lock.acquire(False)
 
+        print("Booleans ", lock_aquired, len(recorded_signals_local_cache), len(pps_entries_local_cache))
+        
+        ret = False
+
         if lock_aquired and recorded_signals_local_cache:
             # print("LOG: Succesfully aquired lock, transfering messages")
             # transfer recorded_signals_local_cache to recorded_signals
             recorded_signals.extend(recorded_signals_local_cache)
             recorded_signals_local_cache = []
-            lock.release()
-            return True
+            ret = True
         if lock_aquired and pps_entries_local_cache:
             # print("LOG: Succesfully aquired lock, transfering messages")
             # transfer recorded_signals_local_cache to recorded_signals
             pps_entries.extend(pps_entries_local_cache)
             pps_entries_local_cache = []
-            lock.release()
-            return True
-        elif lock_aquired:
+            ret = True
+        if lock_aquired:
             # print("LOG: Succesfully aquired lock")
             lock.release()
-            return False
 
-        return False
+        return ret
 
     async def read_messages(self):
 
@@ -158,7 +159,7 @@ class DueSerialComm():
             print("ERROR: No serial port found")
             return
 
-        global serial_reading, recorded_signals, recorded_signals_local_cache, pps_id
+        global serial_reading, recorded_signals, recorded_signals_local_cache, pps_entries, pps_entries_local_cache,  pps_id
 
         recorded_signals_local_cache = []
 
@@ -180,7 +181,7 @@ class DueSerialComm():
 
                     if char1 == "S" and ser.read(1).decode('utf-8') == "Y":
                         msg = ser.read(PPS_MSG_SIZE).decode('utf-8').rstrip()
-
+                        print("PPS msg")
                         try:
                             msg = int(msg)
                             pps_id += 1
@@ -206,7 +207,6 @@ class DueSerialComm():
                                 "ERROR: Could not convert string to int, sequence_msg")
                             ser.reset_input_buffer()
                             print(msg)
-                print("Break")
                 acc = 0
                 await asyncio.sleep(1/1600/2)
 
