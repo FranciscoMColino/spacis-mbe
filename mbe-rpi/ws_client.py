@@ -10,6 +10,7 @@ WS_CLIENT_LONG_WAIT_TIME = 1/200
 PERIODIC_DATA_TRANSFER_WAIT_TIME = 1/3
 RECONNECT_WAIT_TIME = 3
 MAX_NUM_SAMPLES = 1000
+SERVER_TIMEOUT = 5
 
 TEMPERATURE_STATUS_WAIT_TIME = 1
 GPS_STATUS_WAIT_TIME = 1
@@ -29,6 +30,8 @@ class MainBoxClient:
         self.temp_controller = temp_controller
         self.system_controller = system_controller
         self.gps_controller = gps_controller
+        self.heart_beat = False
+        self.connecting = False
 
     async def run(self):
         print("LOG: Trying to connect to server")
@@ -43,26 +46,30 @@ class MainBoxClient:
         while True:
             try:
 
-                if self.ws.connected:
-                    print("LOG: Already connected to server")
+                if self.connecting:
+                    print("LOG: Already trying to connect to server")
                     return
 
+                self.connecting = True
+
+                print("LOG: Trying to connect to server")
                 tmp_ws = await websockets.connect(self.url)
                 print("LOG: Client started")
                 await tmp_ws.send("client-connect")
                 print("LOG: Client connected to server")
 
                 self.ws = tmp_ws
+                self.connecting = False
 
-                # TODO better client-server handshake
-
-                break
+                break   
             except ConnectionRefusedError:
                 print("LOG: Connection refused")
                 await asyncio.sleep(RECONNECT_WAIT_TIME)
             except Exception as e:
                 print("LOG: Exception while connecting to server ", e)
                 await asyncio.sleep(RECONNECT_WAIT_TIME)
+            finally:
+                self.connecting = False
 
     async def read_from_server(self):
 
@@ -70,7 +77,22 @@ class MainBoxClient:
         # Receiving messages from the server
         while True:
             try:
-                message = await self.ws.recv()
+                if not self.ws:
+                    print("LOG: Server connection lost")
+                    raise websockets.exceptions.ConnectionClosedError(
+                        0, "Server connection lost")
+                try:
+                    message = await asyncio.wait_for(self.ws.recv(), timeout=SERVER_TIMEOUT)
+                except asyncio.TimeoutError:
+                    if not self.heart_beat:
+                        print("LOG: Server connection lost")
+                        raise websockets.exceptions.ConnectionClosedError(
+                            0, "Server connection lost")
+                    else:
+                        print("LOG: Server connection ok")
+                        self.heart_beat = False
+                    continue
+                    
                 print(f'RECEIVED: {message}')
 
                 # try to parse the message that should be in json format
@@ -79,16 +101,22 @@ class MainBoxClient:
                 except json.decoder.JSONDecodeError:
                     print("LOG: Received message is not in JSON format")
                     continue
+                except Exception as e:
+                    print("LOG: Exception while parsing message ", e)
+                    
 
                 # check if the message is a command
                 if message["type"] == "command":
                     print("LOG: Received message is a command")
                     self.command_handler.add_command(message["data"])
+                elif message["type"] == "heartbeat":
+                    print("LOG: Received heartbeat")
+                    self.heart_beat = True
                 else:
                     print("LOG: Received message is not a command")
 
             except Exception as e:
-                print("LOG: Exception while reading from server ", e)
+                print("LOG: Exception while reading from server {} msg {}]".format(e, message))
 
                 self.ws = None
                 await self.connect()
@@ -129,10 +157,16 @@ class MainBoxClient:
 
                     await self.ws.send(json.dumps(message))
                     await asyncio.sleep(PERIODIC_DATA_TRANSFER_WAIT_TIME)
+                elif not self.ws:
+                    print("LOG: Not connected to server")
+                    self.ws = None
+                    await asyncio.sleep(RECONNECT_WAIT_TIME)
+
+
             except websockets.exceptions.ConnectionClosedError:
                 print("LOG: Connection closed")
                 self.ws = None
-                await self.connect()
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
 
     async def periodic_temperature_status(self):
         while True:
@@ -147,7 +181,8 @@ class MainBoxClient:
             except websockets.exceptions.ConnectionClosedError:
                 print("LOG: Connection closed")
                 self.ws = None
-                await self.connect()
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
+
 
     async def periodic_system_status(self):
         while True:
@@ -162,7 +197,8 @@ class MainBoxClient:
             except websockets.exceptions.ConnectionClosedError:
                 print("LOG: Connection closed")
                 self.ws = None
-                await self.connect()
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
+
 
     async def periodic_gps_status(self):
         while True:
@@ -177,4 +213,5 @@ class MainBoxClient:
             except websockets.exceptions.ConnectionClosedError:
                 print("LOG: Connection closed")
                 self.ws = None
-                await self.connect()
+                await asyncio.sleep(RECONNECT_WAIT_TIME)
+
