@@ -42,6 +42,11 @@ class MainBoxClient:
     async def connect(self):
         while True:
             try:
+
+                if self.ws.connected:
+                    print("LOG: Already connected to server")
+                    return
+
                 tmp_ws = await websockets.connect(self.url)
                 print("LOG: Client started")
                 await tmp_ws.send("client-connect")
